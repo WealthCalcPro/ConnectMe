@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ConnectMe - Live Video Rooms</title>
+    <title>ConnectMe - Pro Video Rooms</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Firebase App & Database -->
@@ -24,17 +24,26 @@
             z-index: 50;
             font-size: 2rem;
         }
+        .blur-bg {
+            filter: blur(12px);
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <body id="app-body" class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden transition-colors duration-300">
+
+    <!-- Toast Notification Container -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full transition-transform duration-300 bg-indigo-600 text-white text-xs px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2">
+        <span id="toast-msg">Link copied!</span>
+    </div>
 
     <!-- ================= 1. HOME / JOIN SCREEN ================= -->
     <div id="home-screen" class="flex-1 flex items-center justify-center p-4">
         <div id="home-card" class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-8 shadow-2xl transition-colors duration-300">
             <div class="text-center mb-6">
                 <div class="text-4xl mb-2">📹</div>
-                <h1 class="text-2xl font-bold tracking-tight">ConnectMe</h1>
-                <p class="text-xs text-slate-400 mt-1">HD Video Rooms for Family & Friends</p>
+                <h1 class="text-2xl font-bold tracking-tight">ConnectMe Pro</h1>
+                <p class="text-xs text-slate-400 mt-1">HD Rooms with Recording, Audio Share & Host Controls</p>
             </div>
 
             <div class="space-y-4">
@@ -63,22 +72,25 @@
                     <p id="call-timer" class="text-xs text-slate-400 font-mono">⏱️ 00:00</p>
                 </div>
                 <span id="participant-badge" class="bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-xs px-2.5 py-1 rounded-full font-medium">👥 1 Online</span>
+                <span id="recording-badge" class="hidden bg-red-600/20 text-red-400 border border-red-500/30 text-xs px-2 py-0.5 rounded-full font-medium animate-pulse">🔴 REC</span>
             </div>
             
             <div class="flex items-center flex-wrap gap-2">
                 <button onclick="copyInviteLink()" class="bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/30 px-3 py-2 rounded-lg text-xs font-medium transition">📋 Copy Invite</button>
                 <button onclick="toggleAudio()" id="audio-btn" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium transition">🎤 Mute</button>
                 <button onclick="toggleVideo()" id="video-btn" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium transition">📷 Stop Cam</button>
-                <button onclick="flipCamera()" id="flip-btn" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium transition">🔄 Flip Cam</button>
-                <button onclick="toggleHandRaise()" id="hand-btn" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium transition">✋ Raise Hand</button>
-                <button onclick="toggleScreenShare()" id="screen-btn" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium transition">💻 Share</button>
+                <button onclick="flipCamera()" id="flip-btn" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium transition">🔄 Flip</button>
+                <button onclick="toggleVirtualBlur()" id="blur-btn" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium transition">✨ Blur BG</button>
+                <button onclick="toggleScreenShare()" id="screen-btn" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium transition">💻 Share Screen</button>
+                <button onclick="toggleRecording()" id="rec-btn" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium transition">🔴 Record</button>
+                <button onclick="toggleHandRaise()" id="hand-btn" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium transition">✋ Hand</button>
                 <button onclick="toggleChatDrawer()" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium transition">💬 Chat</button>
                 <button onclick="toggleTheme()" id="theme-btn" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium transition">🌙 Theme</button>
                 <button onclick="leaveRoom()" class="bg-red-600 hover:bg-red-500 text-white px-3 py-2 rounded-lg text-xs font-medium transition">Leave</button>
             </div>
         </div>
 
-        <!-- Main Content Area (Videos Grid + Chat Drawer) -->
+        <!-- Main Content Area -->
         <div class="flex-1 flex gap-4 overflow-hidden relative">
             <!-- Video Dynamic Grid -->
             <div id="video-grid" class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 items-center justify-center overflow-y-auto content-center relative">
@@ -90,7 +102,7 @@
                 </div>
             </div>
 
-            <!-- Floating Emoji Tray & Reactions Container -->
+            <!-- Floating Emoji Tray -->
             <div id="reaction-container" class="absolute bottom-6 left-6 flex gap-2 bg-slate-800/80 backdrop-blur-md p-2 rounded-xl border border-slate-700 shadow-lg z-40">
                 <button onclick="sendReaction('❤️')" class="hover:scale-125 transition text-lg">❤️</button>
                 <button onclick="sendReaction('😂')" class="hover:scale-125 transition text-lg">😂</button>
@@ -118,7 +130,7 @@
 
     <!-- Footer -->
     <footer class="text-center py-3 text-xs text-slate-500 border-t border-slate-800 transition-colors duration-300">
-        ConnectMe Video Platform &copy; 2026
+        ConnectMe Pro Video Platform &copy; 2026
     </footer>
 
     <!-- ================= APPLICATION LOGIC ================= -->
@@ -146,6 +158,20 @@
         let secondsElapsed = 0;
         let isHandRaised = false;
         let isDarkMode = true;
+        let isBlurred = false;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let isRecording = false;
+        let isHost = false;
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.remove('translate-x-full');
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+            }, 3000);
+        }
 
         async function initMedia(facingMode = 'user') {
             try {
@@ -179,17 +205,25 @@
 
             startCallTimer();
 
+            // Check if user is host (first person joining room node check)
+            db.ref('rooms/' + roomCode).once('value', (snapshot) => {
+                if (!snapshot.exists()) {
+                    isHost = true;
+                }
+            });
+
             peer = new Peer();
 
             peer.on('open', (id) => {
                 const roomRef = db.ref('rooms/' + roomCode + '/' + id);
-                roomRef.set({ name: userName, handRaised: false });
+                roomRef.set({ name: userName, handRaised: false, muted: false });
                 roomRef.onDisconnect().remove();
 
                 listenForPeers();
                 listenForChat();
                 listenForReactions();
                 listenForParticipantCount();
+                listenForHostActions(id);
             });
 
             peer.on('call', (call) => {
@@ -217,10 +251,7 @@
         }
 
         async function flipCamera() {
-            if (!localStream) {
-                alert("Camera stream not available!");
-                return;
-            }
+            if (!localStream) return;
             useFrontCamera = !useFrontCamera;
             const mode = useFrontCamera ? 'user' : 'environment';
             await initMedia(mode);
@@ -234,6 +265,122 @@
             }
         }
 
+        // Virtual Background Blur Toggle
+        function toggleVirtualBlur() {
+            isBlurred = !isBlurred;
+            const videoElem = document.getElementById('local-video');
+            const blurBtn = document.getElementById('blur-btn');
+            if (isBlurred) {
+                videoElem.classList.add('blur-bg');
+                blurBtn.className = "bg-indigo-600 text-white px-3 py-2 rounded-lg text-xs font-medium transition";
+                blurBtn.innerText = "✨ Unblur";
+                showToast("Background blurred");
+            } else {
+                videoElem.classList.remove('blur-bg');
+                blurBtn.className = "bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium transition";
+                blurBtn.innerText = "✨ Blur BG";
+                showToast("Background unblurred");
+            }
+        }
+
+        // Screen Sharing with System Audio Support (+ Mobile Fallback check)
+        async function toggleScreenShare() {
+            try {
+                if (!isSharingScreen) {
+                    if (!navigator.mediaDevices.getDisplayMedia) {
+                        alert("Screen sharing is not supported on this mobile browser/device.");
+                        return;
+                    }
+                    const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                    const videoTrack = screenStream.getVideoTracks()[0];
+
+                    for (let peerId in activePeers) {
+                        const sender = activePeers[peerId].peerConnection?.getSenders().find(s => s.track && s.track.kind === 'video');
+                        if (sender) sender.replaceTrack(videoTrack);
+                    }
+
+                    document.getElementById('local-video').srcObject = screenStream;
+                    isSharingScreen = true;
+                    document.getElementById('screen-btn').innerText = "💻 Stop Share";
+                    document.getElementById('screen-btn').className = "bg-indigo-600 text-white px-3 py-2 rounded-lg text-xs font-medium transition";
+                    showToast("Screen sharing started");
+
+                    videoTrack.onended = () => { stopScreenShare(); };
+                } else {
+                    stopScreenShare();
+                }
+            } catch (err) {
+                console.error("Screen share error:", err);
+            }
+        }
+
+        function stopScreenShare() {
+            if (localStream && localStream.getVideoTracks().length > 0) {
+                const videoTrack = localStream.getVideoTracks()[0];
+                for (let peerId in activePeers) {
+                    const sender = activePeers[peerId].peerConnection?.getSenders().find(s => s.track && s.track.kind === 'video');
+                    if (sender) sender.replaceTrack(videoTrack);
+                }
+                document.getElementById('local-video').srcObject = localStream;
+            }
+            isSharingScreen = false;
+            document.getElementById('screen-btn').innerText = "💻 Share Screen";
+            document.getElementById('screen-btn').className = "bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium transition";
+            showToast("Screen sharing stopped");
+        }
+
+        // Call Recording Feature (MediaRecorder API)
+        function toggleRecording() {
+            const recBtn = document.getElementById('rec-btn');
+            const recBadge = document.getElementById('recording-badge');
+
+            if (!isRecording) {
+                recordedChunks = [];
+                try {
+                    // Combine local and remote streams if possible, or fallback to localStream
+                    mediaRecorder = new MediaRecorder(localStream, { mimeType: 'video/webm; codecs=vp9' });
+                } catch (e) {
+                    try { mediaRecorder = new MediaRecorder(localStream); } catch (err) {
+                        alert("Recording not supported on this browser.");
+                        return;
+                    }
+                }
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) recordedChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `connectme-recording-${Date.now()}.webm`;
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                    }, 100);
+                    showToast("Recording saved successfully!");
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                recBtn.className = "bg-red-600 text-white px-3 py-2 rounded-lg text-xs font-medium transition";
+                recBtn.innerText = "⏹️ Stop Rec";
+                recBadge.classList.remove('hidden');
+                showToast("Call recording started...");
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                recBtn.className = "bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium transition";
+                recBtn.innerText = "🔴 Record";
+                recBadge.classList.add('hidden');
+            }
+        }
+
         function toggleHandRaise() {
             isHandRaised = !isHandRaised;
             const btn = document.getElementById('hand-btn');
@@ -241,11 +388,12 @@
 
             if (isHandRaised) {
                 btn.className = "bg-yellow-600 text-white px-3 py-2 rounded-lg text-xs font-medium transition";
-                btn.innerText = "✋ Lower Hand";
+                btn.innerText = "✋ Lower";
                 handBadge.classList.remove('hidden');
+                showToast("Hand raised");
             } else {
                 btn.className = "bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium transition";
-                btn.innerText = "✋ Raise Hand";
+                btn.innerText = "✋ Hand";
                 handBadge.classList.add('hidden');
             }
 
@@ -270,6 +418,23 @@
                         }
                     }
                 });
+            });
+        }
+
+        // Host Controls (Mute All / Kick) listener
+        function listenForHostActions(myId) {
+            db.ref('rooms/' + roomCode + '/' + myId).on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    if (data.forceMute && !isMuted) {
+                        toggleAudio();
+                        showToast("Host muted your microphone");
+                    }
+                    if (data.kicked) {
+                        alert("You have been removed from the room by the host.");
+                        leaveRoom();
+                    }
+                }
             });
         }
 
@@ -362,8 +527,22 @@
                 const grid = document.getElementById('video-grid');
                 div = document.createElement('div');
                 div.id = `video-box-${peerId}`;
-                div.className = "relative bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 aspect-video flex items-center justify-center shadow-inner";
+                div.className = "relative bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 aspect-video flex items-center justify-center shadow-inner group";
                 
+                let hostControlsHtml = "";
+                // If current user is host, add Kick/Mute buttons on remote user tile
+                setTimeout(() => {
+                    if (isHost) {
+                        const ctrlDiv = document.createElement('div');
+                        ctrlDiv.className = "absolute top-3 left-3 hidden group-hover:flex gap-1 bg-black/70 p-1 rounded-lg z-20";
+                        ctrlDiv.innerHTML = `
+                            <button onclick="hostMuteUser('${peerId}')" class="bg-yellow-600 text-white text-[10px] px-2 py-1 rounded">Mute</button>
+                            <button onclick="hostKickUser('${peerId}')" class="bg-red-600 text-white text-[10px] px-2 py-1 rounded">Kick</button>
+                        `;
+                        div.appendChild(ctrlDiv);
+                    }
+                }, 500);
+
                 div.innerHTML = `
                     <video autoplay playsinline class="w-full h-full object-cover"></video>
                     <span class="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md text-white text-xs px-2.5 py-1 rounded-md font-medium">${escapeHtml(name)}</span>
@@ -378,6 +557,16 @@
             }
         }
 
+        function hostMuteUser(targetPeerId) {
+            db.ref('rooms/' + roomCode + '/' + targetPeerId).update({ forceMute: true });
+            showToast("User muted");
+        }
+
+        function hostKickUser(targetPeerId) {
+            db.ref('rooms/' + roomCode + '/' + targetPeerId).update({ kicked: true });
+            showToast("User kicked");
+        }
+
         function removeRemoteVideo(peerId) {
             const box = document.getElementById(`video-box-${peerId}`);
             if (box) box.remove();
@@ -387,47 +576,7 @@
         function copyInviteLink() {
             const inviteUrl = window.location.href.split('?')[0] + `?room=${roomCode}`;
             navigator.clipboard.writeText(inviteUrl);
-            alert("Invite link copied to clipboard!");
-        }
-
-        let isSharingScreen = false;
-        async function toggleScreenShare() {
-            try {
-                if (!isSharingScreen) {
-                    const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-                    const videoTrack = screenStream.getVideoTracks()[0];
-
-                    for (let peerId in activePeers) {
-                        const sender = activePeers[peerId].peerConnection?.getSenders().find(s => s.track && s.track.kind === 'video');
-                        if (sender) sender.replaceTrack(videoTrack);
-                    }
-
-                    document.getElementById('local-video').srcObject = screenStream;
-                    isSharingScreen = true;
-                    document.getElementById('screen-btn').innerText = "💻 Stop";
-                    document.getElementById('screen-btn').className = "bg-indigo-600 text-white px-3 py-2 rounded-lg text-xs font-medium transition";
-
-                    videoTrack.onended = () => { stopScreenShare(); };
-                } else {
-                    stopScreenShare();
-                }
-            } catch (err) {
-                console.error("Screen share error:", err);
-            }
-        }
-
-        function stopScreenShare() {
-            if (localStream && localStream.getVideoTracks().length > 0) {
-                const videoTrack = localStream.getVideoTracks()[0];
-                for (let peerId in activePeers) {
-                    const sender = activePeers[peerId].peerConnection?.getSenders().find(s => s.track && s.track.kind === 'video');
-                    if (sender) sender.replaceTrack(videoTrack);
-                }
-                document.getElementById('local-video').srcObject = localStream;
-            }
-            isSharingScreen = false;
-            document.getElementById('screen-btn').innerText = "💻 Share";
-            document.getElementById('screen-btn').className = "bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium transition";
+            showToast("Invite link copied to clipboard!");
         }
 
         function toggleChatDrawer() {
