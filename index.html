@@ -112,7 +112,6 @@
         let userName = "";
         let activePeers = {};
 
-        // Optimized media constraints to reduce lag and buffering
         async function initMedia() {
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({ 
@@ -122,7 +121,7 @@
                 document.getElementById('local-video').srcObject = localStream;
             } catch (err) {
                 console.error("Media access error:", err);
-                alert("Could not access camera or microphone.");
+                alert("Could not access camera or microphone. Please allow permissions.");
             }
         }
         initMedia();
@@ -141,7 +140,13 @@
             document.getElementById('display-room-title').innerText = `Room: ${roomCode.toUpperCase()}`;
             document.getElementById('local-label').innerText = `${userName} (You)`;
 
-            peer = new Peer();
+            // Using public PeerJS server with secure config to prevent mobile drops
+            peer = new Peer({
+                host: '0.peerjs.com',
+                port: 443,
+                secure: true,
+                debug: 1
+            });
 
             peer.on('open', (id) => {
                 const roomRef = db.ref('rooms/' + roomCode + '/' + id);
@@ -153,8 +158,17 @@
             });
 
             peer.on('call', (call) => {
-                call.answer(localStream);
-                handleIncomingCall(call);
+                // Ensure localStream is ready before answering
+                if (!localStream) {
+                    navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
+                        localStream = stream;
+                        call.answer(localStream);
+                        handleIncomingCall(call);
+                    });
+                } else {
+                    call.answer(localStream);
+                    handleIncomingCall(call);
+                }
             });
         }
 
@@ -166,11 +180,12 @@
                 const peerData = snapshot.val();
 
                 if (remotePeerId !== peer.id && !activePeers[remotePeerId]) {
-                    // Slight delay to ensure peer is fully ready to receive call
                     setTimeout(() => {
-                        const call = peer.call(remotePeerId, localStream);
-                        handleIncomingCall(call, peerData.name);
-                    }, 500);
+                        if (localStream) {
+                            const call = peer.call(remotePeerId, localStream);
+                            handleIncomingCall(call, peerData.name);
+                        }
+                    }, 1000);
                 }
             });
 
@@ -213,6 +228,7 @@
             const videoElem = div.querySelector('video');
             if (videoElem.srcObject !== stream) {
                 videoElem.srcObject = stream;
+                videoElem.play().catch(e => console.log("Autoplay prevented:", e));
             }
         }
 
@@ -332,7 +348,7 @@
             window.location.reload();
         }
 
-        function escapeHtml(text) {
+            function escapeHtml(text) {
             const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
             return text.replace(/[&<>"']/g, function(m) { return map[m]; });
         }
