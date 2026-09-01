@@ -206,7 +206,6 @@
             });
         }
 
-        // Call Duration Timer
         function startCallTimer() {
             secondsElapsed = 0;
             callTimerInterval = setInterval(() => {
@@ -217,21 +216,24 @@
             }, 1000);
         }
 
-        // Flip Camera (Front / Back)
         async function flipCamera() {
+            if (!localStream) {
+                alert("Camera stream not available!");
+                return;
+            }
             useFrontCamera = !useFrontCamera;
             const mode = useFrontCamera ? 'user' : 'environment';
             await initMedia(mode);
             
-            // Replace tracks for ongoing calls
-            const videoTrack = localStream.getVideoTracks()[0];
-            for (let peerId in activePeers) {
-                const sender = activePeers[peerId].peerConnection?.getSenders().find(s => s.track.kind === 'video');
-                if (sender) sender.replaceTrack(videoTrack);
+            if (localStream && localStream.getVideoTracks().length > 0) {
+                const videoTrack = localStream.getVideoTracks()[0];
+                for (let peerId in activePeers) {
+                    const sender = activePeers[peerId].peerConnection?.getSenders().find(s => s.track && s.track.kind === 'video');
+                    if (sender) sender.replaceTrack(videoTrack);
+                }
             }
         }
 
-        // Hand Raise Feature
         function toggleHandRaise() {
             isHandRaised = !isHandRaised;
             const btn = document.getElementById('hand-btn');
@@ -247,10 +249,11 @@
                 handBadge.classList.add('hidden');
             }
 
-            db.ref('rooms/' + roomCode + '/' + peer.id).update({ handRaised: isHandRaised });
+            if (peer && roomCode) {
+                db.ref('rooms/' + roomCode + '/' + peer.id).update({ handRaised: isHandRaised });
+            }
         }
 
-        // Participant Count & Status Watcher
         function listenForParticipantCount() {
             db.ref('rooms/' + roomCode).on('value', (snapshot) => {
                 const count = snapshot.numChildren();
@@ -259,7 +262,7 @@
                 snapshot.forEach((childSnap) => {
                     const pId = childSnap.key;
                     const pData = childSnap.val();
-                    if (pId !== peer.id) {
+                    if (peer && pId !== peer.id) {
                         const remoteHand = document.getElementById(`remote-hand-${pId}`);
                         if (remoteHand) {
                             if (pData.handRaised) remoteHand.classList.remove('hidden');
@@ -270,7 +273,6 @@
             });
         }
 
-        // Emoji Reactions Broadcast & Animation
         function sendReaction(emoji) {
             db.ref('reactions/' + roomCode).push({
                 emoji: emoji,
@@ -296,7 +298,6 @@
             setTimeout(() => span.remove(), 2000);
         }
 
-        // Dark / Light Mode Toggle
         function toggleTheme() {
             isDarkMode = !isDarkMode;
             const body = document.getElementById('app-body');
@@ -397,7 +398,7 @@
                     const videoTrack = screenStream.getVideoTracks()[0];
 
                     for (let peerId in activePeers) {
-                        const sender = activePeers[peerId].peerConnection?.getSenders().find(s => s.track.kind === 'video');
+                        const sender = activePeers[peerId].peerConnection?.getSenders().find(s => s.track && s.track.kind === 'video');
                         if (sender) sender.replaceTrack(videoTrack);
                     }
 
@@ -416,12 +417,14 @@
         }
 
         function stopScreenShare() {
-            const videoTrack = localStream.getVideoTracks()[0];
-            for (let peerId in activePeers) {
-                const sender = activePeers[peerId].peerConnection?.getSenders().find(s => s.track.kind === 'video');
-                if (sender) sender.replaceTrack(videoTrack);
+            if (localStream && localStream.getVideoTracks().length > 0) {
+                const videoTrack = localStream.getVideoTracks()[0];
+                for (let peerId in activePeers) {
+                    const sender = activePeers[peerId].peerConnection?.getSenders().find(s => s.track && s.track.kind === 'video');
+                    if (sender) sender.replaceTrack(videoTrack);
+                }
+                document.getElementById('local-video').srcObject = localStream;
             }
-            document.getElementById('local-video').srcObject = localStream;
             isSharingScreen = false;
             document.getElementById('screen-btn').innerText = "💻 Share";
             document.getElementById('screen-btn').className = "bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium transition";
@@ -471,6 +474,7 @@
 
         let isMuted = false;
         function toggleAudio() {
+            if (!localStream) return;
             isMuted = !isMuted;
             localStream.getAudioTracks()[0].enabled = !isMuted;
             document.getElementById('audio-btn').innerText = isMuted ? "🎤 Unmute" : "🎤 Mute";
@@ -479,6 +483,7 @@
 
         let isVideoOff = false;
         function toggleVideo() {
+            if (!localStream) return;
             isVideoOff = !isVideoOff;
             localStream.getVideoTracks()[0].enabled = !isVideoOff;
             document.getElementById('video-btn').innerText = isVideoOff ? "📷 Start Cam" : "📷 Stop Cam";
