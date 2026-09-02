@@ -195,7 +195,7 @@
         let activePeers = {};
         let useFrontCamera = true;
         let callTimerInterval = null;
-        let secondsElapsed = 0;
+        let startTime = 0;
         let isHandRaised = false;
         let isDarkMode = true;
         let isBlurred = false;
@@ -289,7 +289,7 @@
 
             peer.on('open', (id) => {
                 const roomRef = db.ref('rooms/' + roomCode + '/' + id);
-                roomRef.set({ name: userName, handRaised: false, muted: false });
+                roomRef.set({ name: userName, handRaised: false, muted: false, joinedAt: firebase.database.ServerValue.TIMESTAMP });
                 roomRef.onDisconnect().remove();
 
                 listenForPeers();
@@ -316,9 +316,10 @@
         }
 
         function startCallTimer() {
-            secondsElapsed = 0;
+            startTime = Date.now();
+            if (callTimerInterval) clearInterval(callTimerInterval);
             callTimerInterval = setInterval(() => {
-                secondsElapsed++;
+                const secondsElapsed = Math.floor((Date.now() - startTime) / 1000);
                 const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
                 const secs = String(secondsElapsed % 60).padStart(2, '0');
                 document.getElementById('call-timer').innerText = `⏱️ ${mins}:${secs}`;
@@ -508,15 +509,19 @@
 
         function listenForParticipantCount() {
             db.ref('rooms/' + roomCode).on('value', (snapshot) => {
-                document.getElementById('participant-badge').innerText = `👥 ${snapshot.numChildren()} Online`;
+                let validCount = 0;
                 snapshot.forEach((childSnap) => {
-                    const pId = childSnap.key;
-                    const pData = childSnap.val();
-                    if (peer && pId !== peer.id) {
-                        const handElem = document.getElementById(`remote-hand-${pId}`);
-                        if (handElem) handElem.classList.toggle('hidden', !pData.handRaised);
+                    if (childSnap.val() && childSnap.val().name) {
+                        validCount++;
+                        const pId = childSnap.key;
+                        const pData = childSnap.val();
+                        if (peer && pId !== peer.id) {
+                            const handElem = document.getElementById(`remote-hand-${pId}`);
+                            if (handElem) handElem.classList.toggle('hidden', !pData.handRaised);
+                        }
                     }
                 });
+                document.getElementById('participant-badge').innerText = `👥 ${Math.max(1, validCount)} Online`;
             });
         }
 
@@ -561,7 +566,7 @@
             db.ref('rooms/' + roomCode).on('child_added', (snapshot) => {
                 const remotePeerId = snapshot.key;
                 const peerData = snapshot.val();
-                if (remotePeerId !== peer.id && !activePeers[remotePeerId]) {
+                if (remotePeerId !== peer.id && peerData && !activePeers[remotePeerId]) {
                     setTimeout(() => {
                         if (localStream) {
                             const call = peer.call(remotePeerId, localStream);
