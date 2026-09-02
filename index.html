@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ConnectMe Pro - Zoom/WhatsApp Grade</title>
+    <title>ConnectMe Pro - Zoom Layout</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Firebase App & Database -->
@@ -20,8 +20,8 @@
             animation: floatUp 2s ease-out forwards;
             pointer-events: none;
             position: absolute;
-            bottom: 20px;
-            z-index: 50;
+            bottom: 80px;
+            z-index: 60;
             font-size: 2rem;
         }
         .blur-bg {
@@ -30,109 +30,137 @@
         }
     </style>
 </head>
-<body id="app-body" class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden transition-colors duration-300">
+<body id="app-body" class="bg-slate-950 text-slate-100 h-screen w-screen overflow-hidden flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
 
-    <!-- Toast Notification Container -->
-    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full transition-transform duration-300 bg-indigo-600 text-white text-xs px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2">
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 -translate-y-20 transition-transform duration-300 bg-slate-800 border border-slate-700 text-white text-xs px-4 py-2.5 rounded-full shadow-2xl z-50 flex items-center gap-2">
         <span id="toast-msg">Link copied!</span>
     </div>
 
     <!-- ================= 1. HOME / JOIN SCREEN ================= -->
     <div id="home-screen" class="flex-1 flex items-center justify-center p-4">
-        <div id="home-card" class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-8 shadow-2xl transition-colors duration-300">
+        <div id="home-card" class="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-8 shadow-2xl">
             <div class="text-center mb-6">
-                <div class="text-4xl mb-2">📹</div>
-                <h1 class="text-2xl font-bold tracking-tight">ConnectMe Pro</h1>
-                <p class="text-xs text-slate-400 mt-1">Zoom & WhatsApp Grade HD Video Rooms</p>
+                <div class="w-14 h-14 bg-indigo-600/20 text-indigo-400 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3 border border-indigo-500/30">📹</div>
+                <h1 class="text-xl font-bold tracking-tight">ConnectMe Zoom</h1>
+                <p class="text-xs text-slate-400 mt-1">Professional Video Layout</p>
             </div>
 
             <div class="space-y-4">
                 <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Your Name</label>
-                    <input type="text" id="user-name-input" placeholder="e.g. Rahul" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-100">
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Your Name</label>
+                    <input type="text" id="user-name-input" placeholder="e.g. Rahul" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-100">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Room Code / ID</label>
-                    <input type="text" id="room-code-input" placeholder="e.g. family-8pm" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-100 uppercase tracking-wider font-mono">
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Room Code</label>
+                    <input type="text" id="room-code-input" placeholder="e.g. meeting-101" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-100 uppercase tracking-wider font-mono">
                 </div>
-                <button onclick="joinRoom()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg py-2.5 text-sm transition shadow-lg shadow-indigo-600/30">
-                    Join Room
+                <button onclick="joinRoom()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl py-3 text-sm transition shadow-lg shadow-indigo-600/20">
+                    Join Meeting
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- ================= 2. VIDEO CALL SCREEN ================= -->
-    <div id="call-screen" class="hidden flex-1 flex flex-col h-screen p-3 max-w-7xl mx-auto w-full relative">
-        <!-- Top Bar (User-friendly & Responsive) -->
-        <div id="top-bar" class="flex flex-wrap justify-between items-center bg-slate-800/95 backdrop-blur-md px-4 py-3 rounded-xl mb-3 border border-slate-700 shadow-md gap-3 transition-colors duration-300 z-30">
-            <div class="flex items-center gap-3">
-                <div>
-                    <h2 id="display-room-title" class="font-bold text-sm text-indigo-400">Room: --</h2>
-                    <p id="call-timer" class="text-xs text-slate-400 font-mono">⏱️ 00:00</p>
-                </div>
-                <span id="participant-badge" class="bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-xs px-2.5 py-1 rounded-full font-medium">👥 1 Online</span>
-                <span id="recording-badge" class="hidden bg-red-600/20 text-red-400 border border-red-500/30 text-xs px-2 py-0.5 rounded-full font-medium animate-pulse">🔴 REC</span>
+    <!-- ================= 2. ZOOM STYLE CALL SCREEN ================= -->
+    <div id="call-screen" class="hidden flex-1 relative w-full h-full overflow-hidden flex flex-col bg-slate-950">
+        
+        <!-- Top Header Overlay (Zoom Style) -->
+        <div class="absolute top-0 left-0 right-0 p-3 flex justify-between items-center z-30 bg-gradient-to-b from-slate-950/80 to-transparent pointer-events-none">
+            <div class="flex items-center gap-2 pointer-events-auto bg-slate-900/60 backdrop-blur-md border border-slate-800 px-3 py-1.5 rounded-full">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span id="display-room-title" class="font-semibold text-xs text-slate-200">Room: --</span>
+                <span class="text-slate-600">|</span>
+                <span id="call-timer" class="text-xs text-slate-400 font-mono">00:00</span>
             </div>
             
-            <!-- Control Action Buttons -->
-            <div class="flex items-center flex-wrap gap-1.5">
-                <button onclick="copyInviteLink()" class="bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/30 px-2.5 py-1.5 rounded-lg text-xs font-medium transition">📋 Invite</button>
-                <button onclick="toggleAudio()" id="audio-btn" class="bg-slate-700 hover:bg-slate-600 px-2.5 py-1.5 rounded-lg text-xs font-medium transition">🎤 Mute</button>
-                <button onclick="toggleVideo()" id="video-btn" class="bg-slate-700 hover:bg-slate-600 px-2.5 py-1.5 rounded-lg text-xs font-medium transition">📷 Cam</button>
-                <button onclick="flipCamera()" id="flip-btn" class="bg-slate-700 hover:bg-slate-600 px-2.5 py-1.5 rounded-lg text-xs font-medium transition">🔄 Flip</button>
-                <button onclick="toggleVirtualBlur()" id="blur-btn" class="bg-slate-700 hover:bg-slate-600 px-2.5 py-1.5 rounded-lg text-xs font-medium transition">✨ Blur</button>
-                <button onclick="toggleScreenShare()" id="screen-btn" class="bg-slate-700 hover:bg-slate-600 px-2.5 py-1.5 rounded-lg text-xs font-medium transition">💻 Share</button>
-                <button onclick="toggleRecording()" id="rec-btn" class="bg-slate-700 hover:bg-slate-600 px-2.5 py-1.5 rounded-lg text-xs font-medium transition">🔴 Rec</button>
-                <button onclick="toggleHandRaise()" id="hand-btn" class="bg-slate-700 hover:bg-slate-600 px-2.5 py-1.5 rounded-lg text-xs font-medium transition">✋ Hand</button>
-                <button onclick="toggleChatDrawer()" class="bg-slate-700 hover:bg-slate-600 px-2.5 py-1.5 rounded-lg text-xs font-medium transition">💬 Chat</button>
-                <button onclick="toggleTheme()" id="theme-btn" class="bg-slate-700 hover:bg-slate-600 px-2.5 py-1.5 rounded-lg text-xs font-medium transition">🌙</button>
-                <button onclick="leaveRoom()" class="bg-red-600 hover:bg-red-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-medium transition">Leave</button>
+            <div class="flex items-center gap-2 pointer-events-auto">
+                <span id="recording-badge" class="hidden bg-red-500/20 text-red-400 border border-red-500/30 text-[10px] px-2 py-0.5 rounded-full font-medium animate-pulse">🔴 REC</span>
+                <button onclick="toggleTheme()" id="theme-btn" class="bg-slate-900/60 hover:bg-slate-800 border border-slate-800 text-slate-300 w-8 h-8 rounded-full flex items-center justify-center text-xs transition">🌙</button>
             </div>
         </div>
 
-        <!-- Main Content Area -->
-        <div class="flex-1 flex gap-4 overflow-hidden relative">
-            <!-- Video Dynamic Grid (Using object-contain so video is never cropped/cut) -->
-            <div id="video-grid" class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 items-center justify-center overflow-y-auto content-center relative">
-                <!-- Local Video Card -->
-                <div class="relative bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 aspect-video flex items-center justify-center shadow-inner">
-                    <video id="local-video" autoplay muted playsinline class="w-full h-full object-contain transform -scale-x-100 bg-black"></video>
-                    <span id="local-label" class="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md text-white text-xs px-2.5 py-1 rounded-md font-medium">You</span>
-                    <span id="local-hand" class="absolute top-3 right-3 text-xl hidden">✋</span>
-                </div>
-            </div>
-
-            <!-- Floating Emoji Tray -->
-            <div id="reaction-container" class="absolute bottom-4 left-4 flex gap-2 bg-slate-800/80 backdrop-blur-md p-2 rounded-xl border border-slate-700 shadow-lg z-30">
-                <button onclick="sendReaction('❤️')" class="hover:scale-125 transition text-lg">❤️</button>
-                <button onclick="sendReaction('😂')" class="hover:scale-125 transition text-lg">😂</button>
-                <button onclick="sendReaction('👍')" class="hover:scale-125 transition text-lg">👍</button>
-                <button onclick="sendReaction('👏')" class="hover:scale-125 transition text-lg">👏</button>
-                <button onclick="sendReaction('🔥')" class="hover:scale-125 transition text-lg">🔥</button>
-            </div>
-
-            <!-- Floating In-Call Chat Drawer (Fixed: Mobile par video hide nahi hoga, overlay ki tarah aayega) -->
-            <div id="chat-drawer" class="hidden absolute right-2 bottom-4 top-2 w-80 max-w-full bg-slate-800/95 backdrop-blur-md border border-slate-700 rounded-2xl flex flex-col overflow-hidden shadow-2xl transition-colors duration-300 z-40">
-                <div class="bg-slate-700/50 p-3 border-b border-slate-700 flex justify-between items-center">
-                    <h3 class="font-bold text-xs text-slate-200">Room Chat</h3>
-                    <button onclick="toggleChatDrawer()" class="text-slate-400 hover:text-white text-xs px-2 py-1">✕ Close</button>
-                </div>
-                <div id="chat-messages" class="flex-1 p-3 overflow-y-auto space-y-2 text-xs">
-                    <!-- Dynamic Messages -->
-                </div>
-                <div class="p-2.5 border-t border-slate-700 flex gap-2 bg-slate-800">
-                    <input type="text" id="chat-input" placeholder="Type a message..." onkeypress="handleChatKey(event)" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-100">
-                    <button onclick="sendChatMessage()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg text-xs font-medium">Send</button>
-                </div>
+        <!-- Main Stage Video (Zoom Active Speaker Style - Full Screen Fit) -->
+        <div id="main-stage" class="flex-1 w-full h-full relative flex items-center justify-center bg-slate-950 overflow-hidden">
+            <!-- Default placeholder when alone -->
+            <div id="stage-placeholder" class="text-center p-6 text-slate-500">
+                <div class="text-4xl mb-2"></div>
+                <p class="text-xs">Waiting for others to join...</p>
+                <button onclick="copyInviteLink()" class="mt-3 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs px-3 py-1.5 rounded-lg transition">Copy Invite Link</button>
             </div>
         </div>
+
+        <!-- Floating Thumbnail Strip for Local & Other Participants (Zoom Style Bottom Strip) -->
+        <div id="thumbnail-strip" class="absolute bottom-20 left-4 right-4 flex gap-2 overflow-x-auto z-30 justify-center pb-2 pointer-events-auto">
+            <!-- Local Video Thumbnail -->
+            <div id="local-thumb-box" class="relative w-28 h-20 sm:w-36 sm:h-24 bg-slate-900 rounded-xl overflow-hidden border border-slate-700 shadow-xl flex-shrink-0 flex items-center justify-center">
+                <video id="local-video" autoplay muted playsinline class="w-full h-full object-contain transform -scale-x-100 bg-black"></video>
+                <span id="local-label" class="absolute bottom-1 left-1 bg-black/60 backdrop-blur-sm text-white text-[10px] px-1.5 py-0.5 rounded font-medium">You</span>
+                <span id="local-hand" class="absolute top-1 right-1 text-sm hidden">✋</span>
+            </div>
+        </div>
+
+        <!-- Floating Emoji Reaction Tray -->
+        <div id="reaction-container" class="absolute bottom-20 right-4 flex flex-col gap-2 z-40"></div>
+
+        <!-- Floating Chat Overlay Drawer (Zoom Style Side/Bottom Sheet) -->
+        <div id="chat-drawer" class="hidden absolute right-0 top-0 bottom-0 w-80 max-w-full bg-slate-900/95 backdrop-blur-xl border-l border-slate-800 flex flex-col shadow-2xl z-50 transition-transform duration-300">
+            <div class="p-3.5 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                <h3 class="font-bold text-xs text-slate-200">Meeting Chat</h3>
+                <button onclick="toggleChatDrawer()" class="text-slate-400 hover:text-white text-xs">✕</button>
+            </div>
+            <div id="chat-messages" class="flex-1 p-3 overflow-y-auto space-y-2 text-xs"></div>
+            <div class="p-3 border-t border-slate-800 flex gap-2 bg-slate-900/50">
+                <input type="text" id="chat-input" placeholder="Type message..." onkeypress="handleChatKey(event)" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-100">
+                <button onclick="sendChatMessage()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-xl text-xs font-medium">Send</button>
+            </div>
+        </div>
+
+        <!-- Bottom Control Bar (Zoom Style Floating Dock) -->
+        <div class="absolute bottom-3 left-1/2 transform -translate-x-1/2 z-40 bg-slate-900/90 backdrop-blur-md border border-slate-800 px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2 sm:gap-3 flex-wrap justify-center">
+            <button onclick="toggleAudio()" id="audio-btn" class="flex flex-col items-center gap-0.5 text-slate-300 hover:text-white text-[10px] transition">
+                <span class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-sm">🎤</span>
+                <span id="audio-txt">Mute</span>
+            </button>
+            <button onclick="toggleVideo()" id="video-btn" class="flex flex-col items-center gap-0.5 text-slate-300 hover:text-white text-[10px] transition">
+                <span class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-sm">📹</span>
+                <span id="video-txt">Stop Cam</span>
+            </button>
+            <button onclick="flipCamera()" class="hidden sm:flex flex-col items-center gap-0.5 text-slate-300 hover:text-white text-[10px] transition">
+                <span class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-sm">🔄</span>
+                <span>Flip</span>
+            </button>
+            <button onclick="toggleVirtualBlur()" id="blur-btn" class="flex flex-col items-center gap-0.5 text-slate-300 hover:text-white text-[10px] transition">
+                <span class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-sm">✨</span>
+                <span>Blur</span>
+            </button>
+            <button onclick="toggleScreenShare()" id="screen-btn" class="flex flex-col items-center gap-0.5 text-slate-300 hover:text-white text-[10px] transition">
+                <span class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-sm">💻</span>
+                <span>Share</span>
+            </button>
+            <button onclick="toggleRecording()" id="rec-btn" class="flex flex-col items-center gap-0.5 text-slate-300 hover:text-white text-[10px] transition">
+                <span class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-sm">🔴</span>
+                <span>Record</span>
+            </button>
+            <button onclick="toggleHandRaise()" id="hand-btn" class="flex flex-col items-center gap-0.5 text-slate-300 hover:text-white text-[10px] transition">
+                <span class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-sm">✋</span>
+                <span>Hand</span>
+            </button>
+            <button onclick="toggleChatDrawer()" class="flex flex-col items-center gap-0.5 text-slate-300 hover:text-white text-[10px] transition">
+                <span class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-sm">💬</span>
+                <span>Chat</span>
+            </button>
+            <button onclick="copyInviteLink()" class="flex flex-col items-center gap-0.5 text-slate-300 hover:text-white text-[10px] transition">
+                <span class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-sm">📋</span>
+                <span>Invite</span>
+            </button>
+            <div class="h-6 w-px bg-slate-800 mx-1"></div>
+            <button onclick="leaveRoom()" class="bg-red-600 hover:bg-red-500 text-white font-medium px-4 py-2 rounded-xl text-xs transition shadow-lg shadow-red-600/20">
+                Leave
+            </button>
+        </div>
+
     </div>
-
-    <!-- Footer -->
-    <footer class="text-center py-2 text-xs text-slate-500 border-t border-slate-800 transition-colors duration-300">
-        ConnectMe Pro Video Platform &copy; 2026
-    </footer>
 
     <!-- ================= APPLICATION LOGIC ================= -->
     <script>
@@ -165,13 +193,14 @@
         let isRecording = false;
         let isHost = false;
         let isSharingScreen = false;
+        let activeSpeakerId = null; // Zoom style main stage target
 
         function showToast(msg) {
             const toast = document.getElementById('toast');
             document.getElementById('toast-msg').innerText = msg;
-            toast.classList.remove('translate-x-full');
+            toast.classList.remove('-translate-y-20');
             setTimeout(() => {
-                toast.classList.add('translate-x-full');
+                toast.classList.add('-translate-y-20');
             }, 3000);
         }
 
@@ -181,7 +210,7 @@
                     localStream.getTracks().forEach(track => track.stop());
                 }
                 localStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: facingMode }, 
+                    video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 720 } }, 
                     audio: true 
                 });
                 document.getElementById('local-video').srcObject = localStream;
@@ -208,9 +237,7 @@
             startCallTimer();
 
             db.ref('rooms/' + roomCode).once('value', (snapshot) => {
-                if (!snapshot.exists()) {
-                    isHost = true;
-                }
+                if (!snapshot.exists()) isHost = true;
             });
 
             peer = new Peer();
@@ -247,16 +274,18 @@
                 secondsElapsed++;
                 const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
                 const secs = String(secondsElapsed % 60).padStart(2, '0');
-                document.getElementById('call-timer').innerText = `⏱️ ${mins}:${secs}`;
+                document.getElementById('call-timer').innerText = `${mins}:${secs}`;
             }, 1000);
         }
 
         async function flipCamera() {
             if (!localStream) return;
             useFrontCamera = !useFrontCamera;
-            const mode = useFrontCamera ? 'user' : 'environment';
-            await initMedia(mode);
-            
+            await initMedia(useFrontCamera ? 'user' : 'environment');
+            updateStreamTracks();
+        }
+
+        function updateStreamTracks() {
             if (localStream && localStream.getVideoTracks().length > 0) {
                 const videoTrack = localStream.getVideoTracks()[0];
                 for (let peerId in activePeers) {
@@ -269,16 +298,11 @@
         function toggleVirtualBlur() {
             isBlurred = !isBlurred;
             const videoElem = document.getElementById('local-video');
-            const blurBtn = document.getElementById('blur-btn');
             if (isBlurred) {
                 videoElem.classList.add('blur-bg');
-                blurBtn.className = "bg-indigo-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-medium transition";
-                blurBtn.innerText = "✨ Unblur";
                 showToast("Background blurred");
             } else {
                 videoElem.classList.remove('blur-bg');
-                blurBtn.className = "bg-slate-700 hover:bg-slate-600 px-2.5 py-1.5 rounded-lg text-xs font-medium transition";
-                blurBtn.innerText = "✨ Blur";
                 showToast("Background unblurred");
             }
         }
@@ -287,7 +311,7 @@
             try {
                 if (!isSharingScreen) {
                     if (!navigator.mediaDevices.getDisplayMedia) {
-                        alert("Screen sharing is not supported on this mobile browser.");
+                        alert("Screen sharing not supported on this browser.");
                         return;
                     }
                     const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
@@ -300,8 +324,6 @@
 
                     document.getElementById('local-video').srcObject = screenStream;
                     isSharingScreen = true;
-                    document.getElementById('screen-btn').innerText = "💻 Stop";
-                    document.getElementById('screen-btn').className = "bg-indigo-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-medium transition";
                     showToast("Screen sharing started");
 
                     videoTrack.onended = () => { stopScreenShare(); };
@@ -323,96 +345,57 @@
                 document.getElementById('local-video').srcObject = localStream;
             }
             isSharingScreen = false;
-            document.getElementById('screen-btn').innerText = "💻 Share";
-            document.getElementById('screen-btn').className = "bg-slate-700 hover:bg-slate-600 px-2.5 py-1.5 rounded-lg text-xs font-medium transition";
             showToast("Screen sharing stopped");
         }
 
         function toggleRecording() {
-            const recBtn = document.getElementById('rec-btn');
             const recBadge = document.getElementById('recording-badge');
-
             if (!isRecording) {
                 recordedChunks = [];
                 try {
                     mediaRecorder = new MediaRecorder(localStream, { mimeType: 'video/webm; codecs=vp9' });
                 } catch (e) {
                     try { mediaRecorder = new MediaRecorder(localStream); } catch (err) {
-                        alert("Recording not supported on this browser.");
+                        alert("Recording not supported.");
                         return;
                     }
                 }
-
-                mediaRecorder.ondataavailable = (event) => {
-                    if (event.data.size > 0) recordedChunks.push(event.data);
-                };
-
+                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
                 mediaRecorder.onstop = () => {
                     const blob = new Blob(recordedChunks, { type: 'video/webm' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
-                    a.style.display = 'none';
                     a.href = url;
-                    a.download = `connectme-recording-${Date.now()}.webm`;
-                    document.body.appendChild(a);
+                    a.download = `meeting-${Date.now()}.webm`;
                     a.click();
-                    setTimeout(() => {
-                        document.body.removeChild(a);
-                        window.URL.revokeObjectURL(url);
-                    }, 100);
                     showToast("Recording saved!");
                 };
-
                 mediaRecorder.start();
                 isRecording = true;
-                recBtn.className = "bg-red-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-medium transition";
-                recBtn.innerText = "⏹️ Stop";
                 recBadge.classList.remove('hidden');
                 showToast("Recording started...");
             } else {
                 mediaRecorder.stop();
                 isRecording = false;
-                recBtn.className = "bg-slate-700 hover:bg-slate-600 px-2.5 py-1.5 rounded-lg text-xs font-medium transition";
-                recBtn.innerText = "🔴 Rec";
                 recBadge.classList.add('hidden');
             }
         }
 
         function toggleHandRaise() {
             isHandRaised = !isHandRaised;
-            const btn = document.getElementById('hand-btn');
-            const handBadge = document.getElementById('local-hand');
-
-            if (isHandRaised) {
-                btn.className = "bg-yellow-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-medium transition";
-                btn.innerText = "✋ Raised";
-                handBadge.classList.remove('hidden');
-                showToast("Hand raised");
-            } else {
-                btn.className = "bg-slate-700 hover:bg-slate-600 px-2.5 py-1.5 rounded-lg text-xs font-medium transition";
-                btn.innerText = "✋ Hand";
-                handBadge.classList.add('hidden');
-            }
-
-            if (peer && roomCode) {
-                db.ref('rooms/' + roomCode + '/' + peer.id).update({ handRaised: isHandRaised });
-            }
+            document.getElementById('local-hand').classList.toggle('hidden', !isHandRaised);
+            showToast(isHandRaised ? "Hand raised" : "Hand lowered");
+            if (peer && roomCode) db.ref('rooms/' + roomCode + '/' + peer.id).update({ handRaised: isHandRaised });
         }
 
         function listenForParticipantCount() {
             db.ref('rooms/' + roomCode).on('value', (snapshot) => {
-                const count = snapshot.numChildren();
-                document.getElementById('participant-badge').innerText = `👥 ${count} Online`;
-
                 snapshot.forEach((childSnap) => {
                     const pId = childSnap.key;
                     const pData = childSnap.val();
                     if (peer && pId !== peer.id) {
-                        const remoteHand = document.getElementById(`remote-hand-${pId}`);
-                        if (remoteHand) {
-                            if (pData.handRaised) remoteHand.classList.remove('hidden');
-                            else remoteHand.classList.add('hidden');
-                        }
+                        const handElem = document.getElementById(`remote-hand-${pId}`);
+                        if (handElem) handElem.classList.toggle('hidden', !pData.handRaised);
                     }
                 });
             });
@@ -422,24 +405,14 @@
             db.ref('rooms/' + roomCode + '/' + myId).on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
-                    if (data.forceMute && !isMuted) {
-                        toggleAudio();
-                        showToast("Host muted your mic");
-                    }
-                    if (data.kicked) {
-                        alert("You have been removed from the room.");
-                        leaveRoom();
-                    }
+                    if (data.forceMute && !isMuted) toggleAudio();
+                    if (data.kicked) { alert("Removed by host."); leaveRoom(); }
                 }
             });
         }
 
         function sendReaction(emoji) {
-            db.ref('reactions/' + roomCode).push({
-                emoji: emoji,
-                sender: userName,
-                timestamp: Date.now()
-            });
+            db.ref('reactions/' + roomCode).push({ emoji: emoji, sender: userName, timestamp: Date.now() });
         }
 
         function listenForReactions() {
@@ -450,11 +423,11 @@
         }
 
         function showFloatingEmoji(emoji) {
-            const container = document.getElementById('video-grid');
+            const container = document.getElementById('call-screen');
             const span = document.createElement('span');
             span.className = 'floating-emoji';
             span.innerText = emoji;
-            span.style.left = `${Math.random() * 80 + 10}%`;
+            span.style.left = `${Math.random() * 70 + 15}%`;
             container.appendChild(span);
             setTimeout(() => span.remove(), 2000);
         }
@@ -462,110 +435,106 @@
         function toggleTheme() {
             isDarkMode = !isDarkMode;
             const body = document.getElementById('app-body');
-            const homeCard = document.getElementById('home-card');
-            const topBar = document.getElementById('top-bar');
-            const chatDrawer = document.getElementById('chat-drawer');
-            const themeBtn = document.getElementById('theme-btn');
-
             if (isDarkMode) {
-                body.className = "bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden transition-colors duration-300";
-                homeCard.className = "bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-8 shadow-2xl transition-colors duration-300";
-                topBar.className = "flex flex-wrap justify-between items-center bg-slate-800/95 backdrop-blur-md px-4 py-3 rounded-xl mb-3 border border-slate-700 shadow-md gap-3 transition-colors duration-300 z-30";
-                chatDrawer.className = "hidden absolute right-2 bottom-4 top-2 w-80 max-w-full bg-slate-800/95 backdrop-blur-md border border-slate-700 rounded-2xl flex flex-col overflow-hidden shadow-2xl transition-colors duration-300 z-40";
-                themeBtn.innerText = "🌙";
+                body.className = "bg-slate-950 text-slate-100 h-screen w-screen overflow-hidden flex flex-col justify-between selection:bg-indigo-500 selection:text-white";
+                document.getElementById('theme-btn').innerText = "🌙";
             } else {
-                body.className = "bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between overflow-x-hidden transition-colors duration-300";
-                homeCard.className = "bg-white border border-slate-200 rounded-2xl max-w-md w-full p-8 shadow-2xl transition-colors duration-300";
-                topBar.className = "flex flex-wrap justify-between items-center bg-white/95 backdrop-blur-md px-4 py-3 rounded-xl mb-3 border border-slate-200 shadow-md gap-3 transition-colors duration-300 z-30";
-                chatDrawer.className = "hidden absolute right-2 bottom-4 top-2 w-80 max-w-full bg-white/95 backdrop-blur-md border border-slate-200 rounded-2xl flex flex-col overflow-hidden shadow-2xl transition-colors duration-300 z-40";
-                themeBtn.innerText = "☀️";
+                body.className = "bg-slate-100 text-slate-900 h-screen w-screen overflow-hidden flex flex-col justify-between selection:bg-indigo-500 selection:text-white";
+                document.getElementById('theme-btn').innerText = "☀️";
             }
         }
 
         function listenForPeers() {
-            const roomRef = db.ref('rooms/' + roomCode);
-            
-            roomRef.on('child_added', (snapshot) => {
+            db.ref('rooms/' + roomCode).on('child_added', (snapshot) => {
                 const remotePeerId = snapshot.key;
                 const peerData = snapshot.val();
-
                 if (remotePeerId !== peer.id && !activePeers[remotePeerId]) {
                     setTimeout(() => {
                         if (localStream) {
                             const call = peer.call(remotePeerId, localStream);
                             handleIncomingCall(call, peerData.name);
                         }
-                    }, 800);
+                    }, 500);
                 }
             });
 
-            roomRef.on('child_removed', (snapshot) => {
-                const remotePeerId = snapshot.key;
-                removeRemoteVideo(remotePeerId);
+            db.ref('rooms/' + roomCode).on('child_removed', (snapshot) => {
+                removeRemoteParticipant(snapshot.key);
             });
         }
 
         function handleIncomingCall(call, peerName = "Participant") {
             activePeers[call.peer] = call;
-
             call.on('stream', (remoteStream) => {
-                addRemoteVideo(call.peer, remoteStream, peerName);
+                addRemoteParticipant(call.peer, remoteStream, peerName);
             });
-
             call.on('close', () => {
-                removeRemoteVideo(call.peer);
+                removeRemoteParticipant(call.peer);
             });
         }
 
-        function addRemoteVideo(peerId, stream, name) {
-            let div = document.getElementById(`video-box-${peerId}`);
-            if (!div) {
-                const grid = document.getElementById('video-grid');
-                div = document.createElement('div');
-                div.id = `video-box-${peerId}`;
-                // Using object-contain for full adjustable view without cropping
-                div.className = "relative bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 aspect-video flex items-center justify-center shadow-inner group";
-                
-                setTimeout(() => {
-                    if (isHost) {
-                        const ctrlDiv = document.createElement('div');
-                        ctrlDiv.className = "absolute top-3 left-3 hidden group-hover:flex gap-1 bg-black/70 p-1 rounded-lg z-20";
-                        ctrlDiv.innerHTML = `
-                            <button onclick="hostMuteUser('${peerId}')" class="bg-yellow-600 text-white text-[10px] px-2 py-1 rounded">Mute</button>
-                            <button onclick="hostKickUser('${peerId}')" class="bg-red-600 text-white text-[10px] px-2 py-1 rounded">Kick</button>
-                        `;
-                        div.appendChild(ctrlDiv);
-                    }
-                }, 500);
+        // Zoom Style Active Speaker Stage Switcher
+        function setMainStageStream(stream, name, pId) {
+            const stage = document.getElementById('main-stage');
+            stage.innerHTML = `
+                <video autoplay playsinline class="w-full h-full object-contain bg-black"></video>
+                <div class="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md text-white text-xs px-3 py-1.5 rounded-lg font-medium">${escapeHtml(name)}</div>
+                <span id="stage-hand" class="absolute top-4 right-4 text-2xl hidden">✋</span>
+            `;
+            const videoElem = stage.querySelector('video');
+            videoElem.srcObject = stream;
+            videoElem.play().catch(e => console.log(e));
+            activeSpeakerId = pId;
+            document.getElementById('stage-placeholder')?.remove();
+        }
 
-                div.innerHTML = `
-                    <video autoplay playsinline class="w-full h-full object-contain bg-black"></video>
-                    <span class="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md text-white text-xs px-2.5 py-1 rounded-md font-medium">${escapeHtml(name)}</span>
-                    <span id="remote-hand-${peerId}" class="absolute top-3 right-3 text-xl hidden">✋</span>
+        function addRemoteParticipant(peerId, stream, name) {
+            // If main stage is empty, set this remote user as main stage
+            if (!activeSpeakerId) {
+                setMainStageStream(stream, name, peerId);
+            }
+
+            // Add to thumbnail strip
+            const strip = document.getElementById('thumbnail-strip');
+            let thumb = document.getElementById(`thumb-${peerId}`);
+            if (!thumb) {
+                thumb = document.createElement('div');
+                thumb.id = `thumb-${peerId}`;
+                thumb.className = "relative w-28 h-20 sm:w-36 sm:h-24 bg-slate-900 rounded-xl overflow-hidden border border-slate-700 shadow-xl flex-shrink-0 cursor-pointer flex items-center justify-center hover:border-indigo-500 transition";
+                thumb.onclick = () => setMainStageStream(stream, name, peerId);
+                thumb.innerHTML = `
+                    <video autoplay playsinline class="w-full h-full object-cover bg-black"></video>
+                    <span class="absolute bottom-1 left-1 bg-black/60 backdrop-blur-sm text-white text-[10px] px-1.5 py-0.5 rounded font-medium">${escapeHtml(name)}</span>
+                    <span id="remote-hand-${peerId}" class="absolute top-1 right-1 text-sm hidden">✋</span>
                 `;
-                grid.appendChild(div);
+                strip.appendChild(thumb);
             }
-            const videoElem = div.querySelector('video');
-            if (videoElem.srcObject !== stream) {
-                videoElem.srcObject = stream;
-                videoElem.play().catch(e => console.log("Autoplay prevented:", e));
+            const vElem = thumb.querySelector('video');
+            if (vElem.srcObject !== stream) {
+                vElem.srcObject = stream;
+                vElem.play().catch(e => console.log(e));
             }
         }
 
-        function hostMuteUser(targetPeerId) {
-            db.ref('rooms/' + roomCode + '/' + targetPeerId).update({ forceMute: true });
-            showToast("User muted");
-        }
-
-        function hostKickUser(targetPeerId) {
-            db.ref('rooms/' + roomCode + '/' + targetPeerId).update({ kicked: true });
-            showToast("User kicked");
-        }
-
-        function removeRemoteVideo(peerId) {
-            const box = document.getElementById(`video-box-${peerId}`);
-            if (box) box.remove();
+        function removeRemoteParticipant(peerId) {
+            const thumb = document.getElementById(`thumb-${peerId}`);
+            if (thumb) thumb.remove();
             delete activePeers[peerId];
+            if (activeSpeakerId === peerId) {
+                activeSpeakerId = null;
+                // Fallback main stage to local video or placeholder
+                const keys = Object.keys(activePeers);
+                if (keys.length > 0) {
+                    // switch to another peer if available
+                } else {
+                    document.getElementById('main-stage').innerHTML = `
+                        <div id="stage-placeholder" class="text-center p-6 text-slate-500">
+                            <div class="text-4xl mb-2">📹</div>
+                            <p class="text-xs">Waiting for others to join...</p>
+                        </div>
+                    `;
+                }
+            }
         }
 
         function copyInviteLink() {
@@ -582,18 +551,11 @@
             const input = document.getElementById('chat-input');
             const text = input.value.trim();
             if (!text) return;
-
-            db.ref('chats/' + roomCode).push({
-                sender: userName,
-                text: text,
-                timestamp: Date.now()
-            });
+            db.ref('chats/' + roomCode).push({ sender: userName, text: text, timestamp: Date.now() });
             input.value = "";
         }
 
-        function handleChatKey(e) {
-            if (e.key === 'Enter') sendChatMessage();
-        }
+        function handleChatKey(e) { if (e.key === 'Enter') sendChatMessage(); }
 
         function listenForChat() {
             db.ref('chats/' + roomCode).on('child_added', (snapshot) => {
@@ -604,7 +566,7 @@
         function appendChatMessage(msg) {
             const container = document.getElementById('chat-messages');
             const div = document.createElement('div');
-            div.className = "flex flex-col bg-slate-900/50 p-2 rounded-lg border border-slate-700/50";
+            div.className = "flex flex-col bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80";
             div.innerHTML = `
                 <div class="flex justify-between text-[10px] text-indigo-400 font-semibold mb-0.5">
                     <span>${escapeHtml(msg.sender)}</span>
@@ -621,8 +583,8 @@
             if (!localStream) return;
             isMuted = !isMuted;
             localStream.getAudioTracks()[0].enabled = !isMuted;
-            document.getElementById('audio-btn').innerText = isMuted ? "🎤 Unmute" : "🎤 Mute";
-            document.getElementById('audio-btn').className = isMuted ? "bg-red-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-medium transition" : "bg-slate-700 hover:bg-slate-600 px-2.5 py-1.5 rounded-lg text-xs font-medium transition";
+            document.getElementById('audio-txt').innerText = isMuted ? "Unmute" : "Mute";
+            showToast(isMuted ? "Microphone muted" : "Microphone unmuted");
         }
 
         let isVideoOff = false;
@@ -630,8 +592,8 @@
             if (!localStream) return;
             isVideoOff = !isVideoOff;
             localStream.getVideoTracks()[0].enabled = !isVideoOff;
-            document.getElementById('video-btn').innerText = isVideoOff ? "📷 Start" : "📷 Cam";
-            document.getElementById('video-btn').className = isVideoOff ? "bg-red-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-medium transition" : "bg-slate-700 hover:bg-slate-600 px-2.5 py-1.5 rounded-lg text-xs font-medium transition";
+            document.getElementById('video-txt').innerText = isVideoOff ? "Start Cam" : "Stop Cam";
+            showToast(isVideoOff ? "Camera stopped" : "Camera started");
         }
 
         function leaveRoom() {
