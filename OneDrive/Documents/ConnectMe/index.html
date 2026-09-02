@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConnectMe - Secure Video Rooms</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase App & Database -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <!-- PeerJS for WebRTC Video/Audio -->
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between">
+
+    <!-- ================= 1. HOME / JOIN SCREEN ================= -->
+    <div id="home-screen" class="flex-1 flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-8 shadow-2xl">
+            <div class="text-center mb-6">
+                <div class="text-4xl mb-2">📹</div>
+                <h1 class="text-2xl font-bold tracking-tight">ConnectMe</h1>
+                <p class="text-xs text-slate-400 mt-1">Instant, secure video calls for family & friends</p>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Your Name</label>
+                    <input type="text" id="user-name-input" placeholder="e.g. Rahul" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-100">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Room Code / Link ID</label>
+                    <input type="text" id="room-code-input" placeholder="e.g. family-8pm" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-100 uppercase tracking-wider font-mono">
+                </div>
+                <button onclick="joinRoom()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg py-2.5 text-sm transition shadow-lg shadow-indigo-600/30">
+                    Join / Create Room
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= 2. VIDEO CALL SCREEN ================= -->
+    <div id="call-screen" class="hidden flex-1 flex flex-col h-screen p-4 max-w-6xl mx-auto w-full">
+        <!-- Top Bar -->
+        <div class="flex justify-between items-center bg-slate-800 px-4 py-3 rounded-xl mb-4 border border-slate-700 shadow-md">
+            <div>
+                <h2 id="display-room-title" class="font-bold text-sm text-indigo-400">Room: --</h2>
+                <p id="display-peer-status" class="text-xs text-slate-400">Connecting to room...</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="toggleAudio()" id="audio-btn" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium transition">🎤 Mute</button>
+                <button onclick="toggleVideo()" id="video-btn" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium transition">📷 Stop Cam</button>
+                <button onclick="leaveRoom()" class="bg-red-600 hover:bg-red-500 text-white px-3 py-2 rounded-lg text-xs font-medium transition">Leave</button>
+            </div>
+        </div>
+
+        <!-- Video Grids -->
+        <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 items-center justify-center">
+            <!-- Local Video (You) -->
+            <div class="relative bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 aspect-video flex items-center justify-center shadow-inner">
+                <video id="local-video" autoplay muted playsinline class="w-full h-full object-cover transform -scale-x-100"></video>
+                <span id="local-label" class="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md text-white text-xs px-2.5 py-1 rounded-md font-medium">You</span>
+            </div>
+            <!-- Remote Video (Partner / Family Member) -->
+            <div class="relative bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 aspect-video flex items-center justify-center shadow-inner">
+                <video id="remote-video" autoplay playsinline class="w-full h-full object-cover"></video>
+                <div id="waiting-placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 text-center p-4">
+                    <div class="text-3xl mb-2 animate-bounce">⏳</div>
+                    <p class="text-sm font-medium">Waiting for someone to join this room...</p>
+                    <p class="text-xs text-slate-500 mt-1">Share this Room Code with your family or partner.</p>
+                </div>
+                <span id="remote-label" class="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md text-white text-xs px-2.5 py-1 rounded-md font-medium hidden">Participant</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center py-3 text-xs text-slate-500 border-t border-slate-800">
+        ConnectMe Video Platform &copy; 2026
+    </footer>
+
+    <!-- ================= APPLICATION LOGIC ================= -->
+    <script>
+        // Firebase Configuration (Using your project settings)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCogqoa3XULwSYW46AGNkpWWuu2K4JZdoI",
+            authDomain: "vaultchatapp-65e05.firebaseapp.com",
+            databaseURL: "https://vaultchatapp-65e05-default-rtdb.firebaseio.com",
+            projectId: "vaultchatapp-65e05",
+            storageBucket: "vaultchatapp-65e05.firebasestorage.app",
+            messagingSenderId: "598529835602",
+            appId: "1:598529835602:web:d6e58dd829b4294a64958b"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let localStream = null;
+        let peer = null;
+        let currentCall = null;
+        let roomCode = "";
+        let userName = "";
+
+        // Initialize Local Camera & Mic Stream
+        async function initMedia() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                document.getElementById('local-video').srcObject = localStream;
+            } catch (err) {
+                console.error("Media access error:", err);
+                alert("Could not access camera or microphone. Please check permissions.");
+            }
+        }
+        initMedia();
+
+        async function joinRoom() {
+            userName = document.getElementById('user-name-input').value.trim();
+            roomCode = document.getElementById('room-code-input').value.trim().toLowerCase();
+
+            if (!userName || !roomCode) {
+                alert("Please enter both your name and a room code!");
+                return;
+            }
+
+            // Switch to Call Screen UI
+            document.getElementById('home-screen').classList.add('hidden');
+            document.getElementById('call-screen').classList.remove('hidden');
+            document.getElementById('display-room-title').innerText = `Room: ${roomCode.toUpperCase()}`;
+            document.getElementById('local-label').innerText = `${userName} (You)`;
+
+            // Initialize PeerJS connection
+            peer = new Peer();
+
+            peer.on('open', (id) => {
+                console.log('My peer ID is: ' + id);
+                document.getElementById('display-peer-status').innerText = "Connected to network. Registering room...";
+
+                // Register this user inside Firebase room registry
+                const roomRef = db.ref('rooms/' + roomCode + '/' + peer.id);
+                roomRef.set({ name: userName });
+                roomRef.onDisconnect().remove();
+
+                // Listen for other peers joining the room
+                listenForPeers();
+            });
+
+            // Handle incoming calls from other peers
+            peer.on('call', (call) => {
+                currentCall = call;
+                call.answer(localStream); // Answer with our local camera/mic stream
+                handleCallStream(call);
+            });
+        }
+
+        function listenForPeers() {
+            const roomRef = db.ref('rooms/' + roomCode);
+            roomRef.on('child_added', (snapshot) => {
+                const remotePeerId = snapshot.key;
+                const peerData = snapshot.val();
+
+                // If the new user is NOT us, initiate a call to them
+                if (remotePeerId !== peer.id) {
+                    document.getElementById('display-peer-status').innerText = `Connected with ${peerData.name}`;
+                    document.getElementById('waiting-placeholder').classList.add('hidden');
+                    document.getElementById('remote-label').classList.remove('hidden');
+                    document.getElementById('remote-label').innerText = peerData.name;
+
+                    const call = peer.call(remotePeerId, localStream);
+                    currentCall = call;
+                    handleCallStream(call);
+                }
+            });
+        }
+
+        function handleCallStream(call) {
+            call.on('stream', (remoteStream) => {
+                const remoteVideo = document.getElementById('remote-video');
+                remoteVideo.srcObject = remoteStream;
+                document.getElementById('waiting-placeholder').classList.add('hidden');
+                document.getElementById('remote-label').classList.remove('hidden');
+            });
+
+            call.on('close', () => {
+                resetRemoteVideo();
+            });
+        }
+
+        function resetRemoteVideo() {
+            const remoteVideo = document.getElementById('remote-video');
+            remoteVideo.srcObject = null;
+            document.getElementById('waiting-placeholder').classList.remove('hidden');
+            document.getElementById('remote-label').classList.add('hidden');
+            document.getElementById('display-peer-status').innerText = "Participant left. Waiting...";
+        }
+
+        // Toggle Audio Mute
+        let isMuted = false;
+        function toggleAudio() {
+            if (!localStream) return;
+            isMuted = !isMuted;
+            localStream.getAudioTracks()[0].enabled = !isMuted;
+            document.getElementById('audio-btn').innerText = isMuted ? "🎤 Unmute" : "🎤 Mute";
+            document.getElementById('audio-btn').className = isMuted ? "bg-red-600 text-white px-3 py-2 rounded-lg text-xs font-medium transition" : "bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium transition";
+        }
+
+        // Toggle Video Cam
+        let isVideoOff = false;
+        function toggleVideo() {
+            if (!localStream) return;
+            isVideoOff = !isVideoOff;
+            localStream.getVideoTracks()[0].enabled = !isVideoOff;
+            document.getElementById('video-btn').innerText = isVideoOff ? "📷 Start Cam" : "📷 Stop Cam";
+            document.getElementById('video-btn').className = isVideoOff ? "bg-red-600 text-white px-3 py-2 rounded-lg text-xs font-medium transition" : "bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs font-medium transition";
+        }
+
+        // Leave Room & Clean up
+        function leaveRoom() {
+            if (peer) {
+                db.ref('rooms/' + roomCode + '/' + peer.id).remove();
+                peer.destroy();
+            }
+            if (currentCall) {
+                currentCall.close();
+            }
+            window.location.reload();
+        }
+    </script>
+</body>
+</html>
