@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConnectMe Enterprise - Ultimate Pro</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase App & Database -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <!-- PeerJS for WebRTC Video/Audio -->
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <style>
+        @keyframes floatUp {
+            0% { transform: translateY(0px) scale(0.8); opacity: 1; }
+            100% { transform: translateY(-180px) scale(1.4); opacity: 0; }
+        }
+        .floating-emoji {
+            animation: floatUp 2s ease-out forwards;
+            pointer-events: none;
+            position: absolute;
+            bottom: 20px;
+            z-index: 50;
+            font-size: 2rem;
+        }
+        .blur-bg {
+            filter: blur(12px);
+            transform: scale(1.1);
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body id="app-body" class="bg-slate-900 text-slate-100 h-screen flex flex-col justify-between overflow-hidden transition-colors duration-300">
+
+    <!-- Toast Notification Container -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full transition-transform duration-300 bg-indigo-600 text-white text-xs px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2">
+        <span id="toast-msg">Link copied!</span>
+    </div>
+
+    <!-- ================= 1. HOME / JOIN SCREEN ================= -->
+    <div id="home-screen" class="flex-1 flex items-center justify-center p-4 overflow-y-auto">
+        <div id="home-card" class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-8 shadow-2xl transition-colors duration-300">
+            <div class="text-center mb-6">
+                <div class="text-4xl mb-2">🚀</div>
+                <h1 class="text-2xl font-bold tracking-tight">ConnectMe Pro</h1>
+                <p class="text-xs text-slate-400 mt-1">Host Controls, File Sharing, Polls & Blur</p>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Your Name</label>
+                    <input type="text" id="user-name-input" placeholder="e.g. Mayuresh" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-100">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Room Code / ID</label>
+                    <input type="text" id="room-code-input" placeholder="e.g. board-meeting" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-100 uppercase tracking-wider font-mono">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Room Password (Optional)</label>
+                    <input type="password" id="room-pass-input" placeholder="4-digit PIN or password" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-100">
+                </div>
+                <button onclick="joinRoom()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg py-2.5 text-sm transition shadow-lg shadow-indigo-600/30">
+                    Secure Join Room
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PASSWORD PROMPT MODAL ================= -->
+    <div id="pass-modal" class="hidden fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl">
+            <h3 class="font-bold text-base mb-2">Room is Password Protected</h3>
+            <p class="text-xs text-slate-400 mb-4">Enter room PIN/password to join.</p>
+            <input type="password" id="modal-pass-input" placeholder="Enter password" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm mb-4 text-center text-slate-100">
+            <div class="flex gap-2">
+                <button onclick="verifyAndJoin()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg text-xs font-medium">Verify & Join</button>
+                <button onclick="cancelPassword()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 rounded-lg text-xs font-medium">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= POLL CREATION MODAL ================= -->
+    <div id="poll-modal" class="hidden fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <h3 class="font-bold text-sm mb-3">Create Live Poll</h3>
+            <div class="space-y-3 mb-4">
+                <input type="text" id="poll-question" placeholder="Ask a question..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100">
+                <input type="text" id="poll-opt1" placeholder="Option A" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100">
+                <input type="text" id="poll-opt2" placeholder="Option B" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100">
+            </div>
+            <div class="flex gap-2">
+                <button onclick="publishPoll()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg text-xs font-medium">Publish Poll</button>
+                <button onclick="togglePollModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 rounded-lg text-xs font-medium">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PARTICIPANTS / HOST MODAL ================= -->
+    <div id="participants-modal" class="hidden fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl flex flex-col max-h-[80vh]">
+            <h3 class="font-bold text-sm mb-3">Manage Participants (<span id="modal-count">0</span>)</h3>
+            <div id="participants-list" class="flex-1 overflow-y-auto space-y-2 mb-4 text-xs"></div>
+            <button onclick="toggleParticipantsModal()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 py-2 rounded-lg text-xs font-medium">Close</button>
+        </div>
+    </div>
+
+    <!-- ================= 2. VIDEO CALL SCREEN ================= -->
+    <div id="call-screen" class="hidden flex-1 flex flex-col h-full p-2 md:p-4 max-w-7xl mx-auto w-full overflow-hidden">
+        <!-- Top Bar -->
+        <div id="top-bar" class="flex justify-between items-center bg-slate-800 px-3 py-2 rounded-xl mb-2 border border-slate-700 shadow-md gap-3 shrink-0">
+            <div class="flex items-center gap-2 shrink-0">
+                <div>
+                    <h2 id="display-room-title" class="font-bold text-xs text-indigo-400">Room: --</h2>
+                    <p id="call-timer" class="text-[10px] text-slate-400 font-mono">⏱️ 00:00</p>
+                </div>
+                <button onclick="toggleParticipantsModal()" id="participant-badge" class="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 text-[10px] px-2 py-0.5 rounded-full font-medium transition">👥 1</button>
+                <span id="recording-badge" class="hidden bg-red-600/20 text-red-400 border border-red-500/30 text-[10px] px-1.5 py-0.5 rounded-full font-medium animate-pulse">🔴 REC</span>
+            </div>
+            
+            <!-- Horizontal Scroll Action Buttons -->
+            <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                <button onclick="copyInviteLink()" class="bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/30 px-2 py-1 rounded-lg text-xs whitespace-nowrap font-medium transition">📋 Invite</button>
+                <button onclick="toggleAudio()" id="audio-btn" class="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded-lg text-xs whitespace-nowrap font-medium transition">🎤 Mute</button>
+                <button onclick="toggleVideo()" id="video-btn" class="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded-lg text-xs whitespace-nowrap font-medium transition">📷 Cam</button>
+                <button onclick="flipCamera()" id="flip-btn" class="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded-lg text-xs whitespace-nowrap font-medium transition">🔄 Flip</button>
+                <button onclick="toggleMirror()" id="mirror-btn" class="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded-lg text-xs whitespace-nowrap font-medium transition">🪞 Mirror</button>
+                <button onclick="toggleVirtualBlur()" id="blur-btn" class="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded-lg text-xs whitespace-nowrap font-medium transition">✨ Blur</button>
+                <button onclick="toggleScreenShare()" id="screen-btn" class="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded-lg text-xs whitespace-nowrap font-medium transition">💻 Share</button>
+                <button onclick="toggleRecording()" id="rec-btn" class="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded-lg text-xs whitespace-nowrap font-medium transition">🔴 Rec</button>
+                <button onclick="toggleHandRaise()" id="hand-btn" class="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded-lg text-xs whitespace-nowrap font-medium transition">✋ Hand</button>
+                <button onclick="togglePollModal()" class="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded-lg text-xs whitespace-nowrap font-medium transition">📊 Poll</button>
+                <button onclick="toggleChatDrawer()" class="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded-lg text-xs whitespace-nowrap font-medium transition">💬 Chat</button>
+                <button onclick="toggleTheme()" id="theme-btn" class="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded-lg text-xs whitespace-nowrap font-medium transition">🌙</button>
+                <button onclick="leaveRoom()" class="bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded-lg text-xs whitespace-nowrap font-medium transition">Leave</button>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 flex gap-3 overflow-hidden relative pb-2">
+            <!-- Video Dynamic Grid -->
+            <div id="video-grid" class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 items-center justify-center overflow-y-auto content-center relative h-full">
+                <!-- Local Video Card -->
+                <div id="local-box" class="relative bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 max-h-full aspect-video flex items-center justify-center shadow-inner">
+                    <video id="local-video" autoplay muted playsinline class="w-full h-full object-contain transform -scale-x-100 bg-black"></video>
+                    <span id="local-label" class="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md text-white text-[10px] px-2 py-0.5 rounded-md font-medium">You</span>
+                    <span id="local-hand" class="absolute top-2 right-2 text-lg hidden">✋</span>
+                </div>
+            </div>
+
+            <!-- Floating Emoji Tray -->
+            <div id="reaction-container" class="absolute bottom-4 left-4 flex gap-1.5 bg-slate-800/80 backdrop-blur-md p-1.5 rounded-xl border border-slate-700 shadow-lg z-40">
+                <button onclick="sendReaction('❤️')" class="hover:scale-125 transition text-base">❤️</button>
+                <button onclick="sendReaction('😂')" class="hover:scale-125 transition text-base">😂</button>
+                <button onclick="sendReaction('👍')" class="hover:scale-125 transition text-base">👍</button>
+                <button onclick="sendReaction('👏')" class="hover:scale-125 transition text-base">👏</button>
+                <button onclick="sendReaction('🔥')" class="hover:scale-125 transition text-base">🔥</button>
+            </div>
+
+            <!-- In-Call Chat, Polls & File Sharing Drawer -->
+            <div id="chat-drawer" class="hidden w-72 md:w-80 bg-slate-800 border border-slate-700 rounded-2xl flex flex-col overflow-hidden shadow-xl shrink-0">
+                <div class="bg-slate-700/50 p-2.5 border-b border-slate-700 flex justify-between items-center">
+                    <h3 class="font-bold text-xs text-slate-200">Chat, Polls & Files</h3>
+                    <button onclick="toggleChatDrawer()" class="text-slate-400 hover:text-white text-xs">✕</button>
+                </div>
+                <!-- Active Poll Display Area -->
+                <div id="poll-active-box" class="hidden p-2.5 bg-indigo-950/50 border-b border-slate-700 text-xs">
+                    <p id="poll-q-display" class="font-bold text-indigo-300 mb-1.5"></p>
+                    <div id="poll-options-box" class="space-y-1"></div>
+                </div>
+                <div id="chat-messages" class="flex-1 p-2.5 overflow-y-auto space-y-2 text-xs"></div>
+                <!-- File Share Toolbar -->
+                <div class="px-2.5 py-1.5 bg-slate-900/40 border-t border-slate-700 flex items-center justify-between text-xs">
+                    <label class="cursor-pointer text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1">
+                        📎 Send File <input type="file" id="file-input" onchange="shareFile(event)" class="hidden">
+                    </label>
+                    <span id="file-status" class="text-[10px] text-slate-400"></span>
+                </div>
+                <div class="p-2 border-t border-slate-700 flex gap-2">
+                    <input type="text" id="chat-input" placeholder="Type a message..." onkeypress="handleChatKey(event)" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-100">
+                    <button onclick="sendChatMessage()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-medium">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center py-2 text-[10px] text-slate-500 border-t border-slate-800 shrink-0">
+        ConnectMe Pro Video Platform &copy; 2026
+    </footer>
+
+    <!-- ================= APPLICATION LOGIC ================= -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCogqoa3XULwSYW46AGNkpWWuu2K4JZdoI",
+            authDomain: "vaultchatapp-65e05.firebaseapp.com",
+            databaseURL: "https://vaultchatapp-65e05-default-rtdb.firebaseio.com",
+            projectId: "vaultchatapp-65e05",
+            storageBucket: "vaultchatapp-65e05.firebasestorage.app",
+            messagingSenderId: "598529835602",
+            appId: "1:598529835602:web:d6e58dd829b4294a64958b"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let localStream = null;
+        let peer = null;
+        let roomCode = "";
+        let userName = "";
+        let roomPassword = "";
+        let activePeers = {};
+        let useFrontCamera = true;
+        let isMirrored = true;
+        let callTimerInterval = null;
+        let startTime = 0;
+        let isHandRaised = false;
+        let isDarkMode = true;
+        let isBlurred = false;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let isRecording = false;
+        let isHost = false;
+        let isSharingScreen = false;
+        let participantsData = {};
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.remove('translate-x-full');
+            setTimeout(() => { toast.classList.add('translate-x-full'); }, 3000);
+        }
+
+        async function initMedia(facingMode = 'user') {
+            try {
+                if (localStream) localStream.getTracks().forEach(track => track.stop());
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: facingMode }, 
+                    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } 
+                });
+                document.getElementById('local-video').srcObject = localStream;
+            } catch (err) { console.error("Media error:", err); }
+        }
+        initMedia();
+
+        function joinRoom() {
+            userName = document.getElementById('user-name-input').value.trim();
+            roomCode = document.getElementById('room-code-input').value.trim().toLowerCase();
+            roomPassword = document.getElementById('room-pass-input').value.trim();
+
+            if (!userName || !roomCode) { alert("Enter name and room code!"); return; }
+
+            db.ref('roomMeta/' + roomCode).once('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    if (data.password && data.password !== roomPassword) {
+                        document.getElementById('pass-modal').classList.remove('hidden');
+                        return;
+                    }
+                } else {
+                    if (roomPassword) db.ref('roomMeta/' + roomCode).set({ password: roomPassword });
+                }
+                proceedToCall();
+            });
+        }
+
+        function verifyAndJoin() {
+            const enteredPass = document.getElementById('modal-pass-input').value.trim();
+            db.ref('roomMeta/' + roomCode + '/password').once('value', (snapshot) => {
+                if (snapshot.val() === enteredPass) {
+                    document.getElementById('pass-modal').classList.add('hidden');
+                    proceedToCall();
+                } else { alert("Incorrect Password!"); }
+            });
+        }
+
+        function cancelPassword() { document.getElementById('pass-modal').classList.add('hidden'); }
+
+        function proceedToCall() {
+            document.getElementById('home-screen').classList.add('hidden');
+            document.getElementById('call-screen').classList.remove('hidden');
+            document.getElementById('display-room-title').innerText = `Room: ${roomCode.toUpperCase()}`;
+            document.getElementById('local-label').innerText = `${userName} (You)`;
+
+            startCallTimer();
+
+            db.ref('rooms/' + roomCode).once('value', (snapshot) => {
+                if (!snapshot.exists()) isHost = true;
+            });
+
+            peer = new Peer();
+
+            peer.on('open', (id) => {
+                const roomRef = db.ref('rooms/' + roomCode + '/' + id);
+                roomRef.set({ name: userName, handRaised: false, muted: false, joinedAt: firebase.database.ServerValue.TIMESTAMP });
+                roomRef.onDisconnect().remove();
+
+                listenForPeers();
+                listenForChat();
+                listenForReactions();
+                listenForParticipants();
+                listenForHostActions(id);
+                listenForPolls();
+            });
+
+            peer.on('call', (call) => {
+                if (!localStream) {
+                    navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
+                        localStream = stream;
+                        document.getElementById('local-video').srcObject = localStream;
+                        call.answer(localStream);
+                        handleIncomingCall(call);
+                    }).catch(e => console.error(e));
+                } else {
+                    call.answer(localStream);
+                    handleIncomingCall(call);
+                }
+            });
+        }
+
+        function startCallTimer() {
+            startTime = Date.now();
+            if (callTimerInterval) clearInterval(callTimerInterval);
+            callTimerInterval = setInterval(() => {
+                const sec = Math.floor((Date.now() - startTime) / 1000);
+                const mins = String(Math.floor(sec / 60)).padStart(2, '0');
+                const secs = String(sec % 60).padStart(2, '0');
+                document.getElementById('call-timer').innerText = `⏱️ ${mins}:${secs}`;
+            }, 1000);
+        }
+
+        async function flipCamera() {
+            if (!localStream) return;
+            useFrontCamera = !useFrontCamera;
+            await initMedia(useFrontCamera ? 'user' : 'environment');
+            updateStreamTracks();
+        }
+
+        function toggleMirror() {
+            isMirrored = !isMirrored;
+            const v = document.getElementById('local-video');
+            if (isMirrored) v.classList.add('transform', '-scale-x-100');
+            else v.classList.remove('transform', '-scale-x-100');
+            showToast(isMirrored ? "Camera Mirrored" : "Camera Unmirrored");
+        }
+
+        function updateStreamTracks() {
+            if (localStream && localStream.getVideoTracks().length > 0) {
+                const track = localStream.getVideoTracks()[0];
+                for (let pId in activePeers) {
+                    const sender = activePeers[pId].peerConnection?.getSenders().find(s => s.track && s.track.kind === 'video');
+                    if (sender) sender.replaceTrack(track);
+                }
+            }
+        }
+
+        function toggleVirtualBlur() {
+            isBlurred = !isBlurred;
+            const v = document.getElementById('local-video');
+            if (isBlurred) v.classList.add('blur-bg');
+            else v.classList.remove('blur-bg');
+            showToast(isBlurred ? "Blur Enabled" : "Blur Disabled");
+        }
+
+        async function toggleScreenShare() {
+            try {
+                if (!isSharingScreen) {
+                    const sStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                    const track = sStream.getVideoTracks()[0];
+                    for (let pId in activePeers) {
+                        const sender = activePeers[pId].peerConnection?.getSenders().find(s => s.track && s.track.kind === 'video');
+                        if (sender) sender.replaceTrack(track);
+                    }
+                    document.getElementById('local-video').srcObject = sStream;
+                    document.getElementById('local-video').classList.remove('transform', '-scale-x-100');
+                    isSharingScreen = true;
+                    document.getElementById('screen-btn').innerText = "💻 Stop";
+                    track.onended = () => stopScreenShare();
+                } else { stopScreenShare(); }
+            } catch (err) { console.error(err); }
+        }
+
+        function stopScreenShare() {
+            if (localStream && localStream.getVideoTracks().length > 0) {
+                const track = localStream.getVideoTracks()[0];
+                for (let pId in activePeers) {
+                    const sender = activePeers[pId].peerConnection?.getSenders().find(s => s.track && s.track.kind === 'video');
+                    if (sender) sender.replaceTrack(track);
+                }
+                document.getElementById('local-video').srcObject = localStream;
+                if (isMirrored) document.getElementById('local-video').classList.add('transform', '-scale-x-100');
+            }
+            isSharingScreen = false;
+            document.getElementById('screen-btn').innerText = "💻 Share";
+        }
+
+        function toggleRecording() {
+            const recBtn = document.getElementById('rec-btn');
+            const recBadge = document.getElementById('recording-badge');
+            if (!isRecording) {
+                recordedChunks = [];
+                try { mediaRecorder = new MediaRecorder(localStream, { mimeType: 'video/webm; codecs=vp9' }); }
+                catch(e) { mediaRecorder = new MediaRecorder(localStream); }
+                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `recording-${Date.now()}.webm`;
+                    a.click();
+                    showToast("Recording saved!");
+                };
+                mediaRecorder.start();
+                isRecording = true;
+                recBtn.className = "bg-red-600 text-white px-2 py-1 rounded-lg text-xs whitespace-nowrap font-medium transition";
+                recBtn.innerText = "⏹️ Stop";
+                recBadge.classList.remove('hidden');
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                recBtn.className = "bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded-lg text-xs whitespace-nowrap font-medium transition";
+                recBtn.innerText = "🔴 Rec";
+                recBadge.classList.add('hidden');
+            }
+        }
+
+        function toggleHandRaise() {
+            isHandRaised = !isHandRaised;
+            document.getElementById('local-hand').classList.toggle('hidden', !isHandRaised);
+            if (peer && roomCode) db.ref('rooms/' + roomCode + '/' + peer.id).update({ handRaised: isHandRaised });
+        }
+
+        function togglePollModal() { document.getElementById('poll-modal').classList.toggle('hidden'); }
+
+        function publishPoll() {
+            const q = document.getElementById('poll-question').value.trim();
+            const o1 = document.getElementById('poll-opt1').value.trim();
+            const o2 = document.getElementById('poll-opt2').value.trim();
+            if (!q || !o1 || !o2) { alert("Fill all poll fields!"); return; }
+            db.ref('polls/' + roomCode).set({ question: q, option1: o1, option2: o2, votes1: 0, votes2: 0 });
+            togglePollModal();
+        }
+
+        function listenForPolls() {
+            db.ref('polls/' + roomCode).on('value', (snapshot) => {
+                const data = snapshot.val();
+                const box = document.getElementById('poll-active-box');
+                if (data) {
+                    box.classList.remove('hidden');
+                    document.getElementById('poll-q-display').innerText = `📊 Poll: ${data.question}`;
+                    document.getElementById('poll-options-box').innerHTML = `
+                        <button onclick="votePoll(1)" class="w-full bg-slate-800 hover:bg-indigo-600 text-left p-1.5 rounded transition flex justify-between"><span>1. ${escapeHtml(data.option1)}</span> <span class="font-bold text-indigo-400">${data.votes1}</span></button>
+                        <button onclick="votePoll(2)" class="w-full bg-slate-800 hover:bg-indigo-600 text-left p-1.5 rounded transition flex justify-between"><span>2. ${escapeHtml(data.option2)}</span> <span class="font-bold text-indigo-400">${data.votes2}</span></button>
+                    `;
+                } else { box.classList.add('hidden'); }
+            });
+        }
+
+        function votePoll(n) {
+            db.ref('polls/' + roomCode).transaction(p => { if(p) { if(n===1) p.votes1++; else p.votes2++; } return p; });
+        }
+
+        function listenForParticipants() {
+            db.ref('rooms/' + roomCode).on('value', (snapshot) => {
+                participantsData = {};
+                let count = 0;
+                let listHtml = '';
+                snapshot.forEach(child => {
+                    const p = child.val();
+                    if (p && p.name) {
+                        count++;
+                        const id = child.key;
+                        participantsData[id] = p;
+                        if (peer && id !== peer.id) {
+                            const hand = document.getElementById(`remote-hand-${id}`);
+                            if (hand) hand.classList.toggle('hidden', !p.handRaised);
+                        }
+                        // Build list for management modal
+                        listHtml += `
+                            <div class="flex justify-between items-center bg-slate-900/50 p-2 rounded-lg border border-slate-700">
+                                <span>${escapeHtml(p.name)} ${p.handRaised ? '✋' : ''}</span>
+                                ${isHost && id !== peer.id ? `<div class="flex gap-1"><button onclick="hostMute('${id}')" class="bg-amber-600 px-2 py-1 rounded text-[10px]">Mute</button><button onclick="hostKick('${id}')" class="bg-red-600 px-2 py-1 rounded text-[10px]">Kick</button></div>` : ''}
+                            </div>
+                        `;
+                    }
+                });
+                document.getElementById('participant-badge').innerText = `👥 ${count}`;
+                document.getElementById('modal-count').innerText = count;
+                document.getElementById('participants-list').innerHTML = listHtml;
+            });
+        }
+
+        function toggleParticipantsModal() { document.getElementById('participants-modal').classList.toggle('hidden'); }
+
+        function hostMute(targetId) { db.ref('rooms/' + roomCode + '/' + targetId).update({ forceMute: true }); }
+        function hostKick(targetId) { db.ref('rooms/' + roomCode + '/' + targetId).update({ kicked: true }); }
+
+        function listenForHostActions(myId) {
+            db.ref('rooms/' + roomCode + '/' + myId).on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    if (data.forceMute && !isMuted) toggleAudio();
+                    if (data.kicked) { alert("You were removed by the host."); leaveRoom(); }
+                }
+            });
+        }
+
+        function shareFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            document.getElementById('file-status').innerText = "Uploading...";
+            reader.onload = function(e) {
+                db.ref('chats/' + roomCode).push({
+                    sender: userName,
+                    fileName: file.name,
+                    fileData: e.target.result,
+                    timestamp: Date.now()
+                });
+                document.getElementById('file-status').innerText = "Shared!";
+                setTimeout(() => document.getElementById('file-status').innerText = "", 2000);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function sendReaction(emoji) {
+            db.ref('reactions/' + roomCode).push({ emoji: emoji, sender: userName });
+        }
+
+        function listenForReactions() {
+            db.ref('reactions/' + roomCode).on('child_added', (s) => showFloatingEmoji(s.val().emoji));
+        }
+
+        function showFloatingEmoji(emoji) {
+            const container = document.getElementById('video-grid');
+            const span = document.createElement('span');
+            span.className = 'floating-emoji';
+            span.innerText = emoji;
+            span.style.left = `${Math.random() * 80 + 10}%`;
+            container.appendChild(span);
+            setTimeout(() => span.remove(), 2000);
+        }
+
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            document.getElementById('app-body').className = isDarkMode ? "bg-slate-900 text-slate-100 h-screen flex flex-col justify-between overflow-hidden transition-colors duration-300" : "bg-slate-100 text-slate-800 h-screen flex flex-col justify-between overflow-hidden transition-colors duration-300";
+            document.getElementById('theme-btn').innerText = isDarkMode ? "🌙" : "☀️";
+        }
+
+        function listenForPeers() {
+            db.ref('rooms/' + roomCode).on('child_added', (snapshot) => {
+                const rId = snapshot.key;
+                const pData = snapshot.val();
+                if (rId !== peer.id && pData && !activePeers[rId]) {
+                    setTimeout(() => {
+                        if (localStream) {
+                            const call = peer.call(rId, localStream);
+                            handleIncomingCall(call, pData.name);
+                        }
+                    }, 500);
+                }
+            });
+            db.ref('rooms/' + roomCode).on('child_removed', (snapshot) => removeRemoteVideo(snapshot.key));
+        }
+
+        function handleIncomingCall(call, pName = "Participant") {
+            activePeers[call.peer] = call;
+            call.on('stream', (stream) => addRemoteVideo(call.peer, stream, pName));
+            call.on('close', () => removeRemoteVideo(call.peer));
+        }
+
+        function addRemoteVideo(peerId, stream, name) {
+            let div = document.getElementById(`video-box-${peerId}`);
+            if (!div) {
+                div = document.createElement('div');
+                div.id = `video-box-${peerId}`;
+                div.className = "relative bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 max-h-full aspect-video flex items-center justify-center shadow-inner group";
+                div.innerHTML = `
+                    <video autoplay playsinline class="w-full h-full object-contain bg-black"></video>
+                    <span class="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md text-white text-[10px] px-2 py-0.5 rounded-md font-medium">${escapeHtml(name)}</span>
+                    <span id="remote-hand-${peerId}" class="absolute top-2 right-2 text-lg hidden">✋</span>
+                `;
+                document.getElementById('video-grid').appendChild(div);
+            }
+            const v = div.querySelector('video');
+            if (v.srcObject !== stream) { v.srcObject = stream; v.play().catch(e => console.log(e)); }
+        }
+
+        function removeRemoteVideo(peerId) {
+            const box = document.getElementById(`video-box-${peerId}`);
+            if (box) box.remove();
+            delete activePeers[peerId];
+        }
+
+        function copyInviteLink() {
+            navigator.clipboard.writeText(window.location.href.split('?')[0] + `?room=${roomCode}`);
+            showToast("Invite link copied!");
+        }
+
+        function toggleChatDrawer() { document.getElementById('chat-drawer').classList.toggle('hidden'); }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+            db.ref('chats/' + roomCode).push({ sender: userName, text: text, timestamp: Date.now() });
+            input.value = "";
+        }
+
+        function handleChatKey(e) { if (e.key === 'Enter') sendChatMessage(); }
+
+        function listenForChat() {
+            db.ref('chats/' + roomCode).on('child_added', (snapshot) => appendChatMessage(snapshot.val()));
+        }
+
+        function appendChatMessage(msg) {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = "flex flex-col bg-slate-900/50 p-2 rounded-lg border border-slate-700/50";
+            let contentHtml = msg.text ? `<p class="text-slate-200 break-words">${escapeHtml(msg.text)}</p>` : `<a href="${msg.fileData}" download="${msg.fileName}" class="text-indigo-400 underline font-medium">📥 Download: ${escapeHtml(msg.fileName)}</a>`;
+            div.innerHTML = `
+                <div class="flex justify-between text-[10px] text-indigo-400 font-semibold mb-0.5">
+                    <span>${escapeHtml(msg.sender)}</span>
+                    <span class="text-slate-500">${new Date(msg.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                ${contentHtml}
+            `;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        let isMuted = false;
+        function toggleAudio() {
+            if (!localStream) return;
+            isMuted = !isMuted;
+            localStream.getAudioTracks()[0].enabled = !isMuted;
+            const btn = document.getElementById('audio-btn');
+            btn.innerText = isMuted ? "🎤 Unmute" : "🎤 Mute";
+            btn.className = isMuted ? "bg-red-600 text-white px-2 py-1 rounded-lg text-xs whitespace-nowrap font-medium transition" : "bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded-lg text-xs whitespace-nowrap font-medium transition";
+        }
+
+        let isVideoOff = false;
+        function toggleVideo() {
+            if (!localStream) return;
+            isVideoOff = !isVideoOff;
+            localStream.getVideoTracks()[0].enabled = !isVideoOff;
+            const btn = document.getElementById('video-btn');
+            btn.innerText = isVideoOff ? "📷 Cam Off" : "📷 Cam";
+            btn.className = isVideoOff ? "bg-red-600 text-white px-2 py-1 rounded-lg text-xs whitespace-nowrap font-medium transition" : "bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded-lg text-xs whitespace-nowrap font-medium transition";
+        }
+
+        function leaveRoom() {
+            if (peer) {
+                db.ref('rooms/' + roomCode + '/' + peer.id).remove();
+                peer.destroy();
+            }
+            if (callTimerInterval) clearInterval(callTimerInterval);
+            window.location.reload();
+        }
+
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+    </script>
+</body>
+</html>
